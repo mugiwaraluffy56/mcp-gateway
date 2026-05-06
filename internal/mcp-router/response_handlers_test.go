@@ -532,3 +532,8 @@ func (m *mockBrokerImpl) ToolAnnotations(_ config.UpstreamMCPID, _ string) (mcp.
 func (m *mockBrokerImpl) ValidateAllServers() broker.StatusResponse {
 	panic("unimplemented")
 }
+
+// HandleA2AAgents implements broker.MCPBroker.
+func (m *mockBrokerImpl) HandleA2AAgents(_ http.ResponseWriter, _ *http.Request) {
+	panic("unimplemented")
+}

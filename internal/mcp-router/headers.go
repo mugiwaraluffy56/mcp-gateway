@@ -17,6 +17,11 @@ const (
 	mcpTarget             = "mcp-target"
 	// RoutingKey is an internal header used to authenticate a request from the router
 	RoutingKey = "router-key"
+
+	// A2A metadata headers set by the router for downstream policy enforcement
+	a2aMethodHeader    = "x-a2a-method"
+	a2aTaskIDHeader    = "x-a2a-task-id"
+	a2aStreamingHeader = "x-a2a-streaming"
 )
 
 func getSingleValueHeader(headers *basepb.HeaderMap, name string) string {
@@ -142,6 +147,43 @@ func (hb *HeadersBuilder) WithCustomHeader(key, value string) *HeadersBuilder {
 		Header: &basepb.HeaderValue{
 			Key:      key,
 			RawValue: []byte(value),
+		},
+	})
+	return hb
+}
+
+// WithA2AMethod will set the x-a2a-method header
+func (hb *HeadersBuilder) WithA2AMethod(method string) *HeadersBuilder {
+	hb.headers = append(hb.headers, &basepb.HeaderValueOption{
+		Header: &basepb.HeaderValue{
+			Key:      a2aMethodHeader,
+			RawValue: []byte(method),
+		},
+	})
+	return hb
+}
+
+// WithA2ATaskID will set the x-a2a-task-id header
+func (hb *HeadersBuilder) WithA2ATaskID(taskID string) *HeadersBuilder {
+	hb.headers = append(hb.headers, &basepb.HeaderValueOption{
+		Header: &basepb.HeaderValue{
+			Key:      a2aTaskIDHeader,
+			RawValue: []byte(taskID),
+		},
+	})
+	return hb
+}
+
+// WithA2AStreaming will set the x-a2a-streaming header
+func (hb *HeadersBuilder) WithA2AStreaming(streaming bool) *HeadersBuilder {
+	val := "false"
+	if streaming {
+		val = "true"
+	}
+	hb.headers = append(hb.headers, &basepb.HeaderValueOption{
+		Header: &basepb.HeaderValue{
+			Key:      a2aStreamingHeader,
+			RawValue: []byte(val),
 		},
 	})
 	return hb

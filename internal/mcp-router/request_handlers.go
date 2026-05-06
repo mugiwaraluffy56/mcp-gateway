@@ -220,6 +220,9 @@ func (s *ExtProcServer) RouteMCPRequest(ctx context.Context, mcpReq *MCPRequest)
 	case mcpReq.Method == methodToolCall:
 		span.SetAttributes(attribute.String("mcp.route", "tool-call"))
 		return s.HandleToolCall(ctx, mcpReq)
+	case isA2ARequest(mcpReq.Method):
+		span.SetAttributes(attribute.String("mcp.route", "a2a"))
+		return s.HandleA2ARequest(ctx, mcpReq)
 	default:
 		span.SetAttributes(attribute.String("mcp.route", "broker"))
 		return s.HandleNoneToolCall(ctx, mcpReq)
