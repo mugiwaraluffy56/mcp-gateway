@@ -350,6 +350,7 @@ func setUpHTTPServer(address string, mcpBroker broker.MCPBroker, sessionManager 
 
 	mux.HandleFunc("/status", mcpBroker.HandleStatusRequest)
 	mux.HandleFunc("/status/", mcpBroker.HandleStatusRequest)
+	mux.HandleFunc("/a2a/agents", mcpBroker.HandleA2AAgents)
 	mux.Handle("/mcp", streamableHTTPServer)
 
 	return httpSrv, streamableHTTPServer

@@ -43,6 +43,9 @@ type MCPBroker interface {
 	// HandleStatusRequest handles HTTP status endpoint requests
 	HandleStatusRequest(w http.ResponseWriter, r *http.Request)
 
+	// HandleA2AAgents handles the federated A2A agent card endpoint
+	HandleA2AAgents(w http.ResponseWriter, r *http.Request)
+
 	// Shutdown closes any resources associated with this Broker
 	Shutdown(ctx context.Context) error
 
@@ -58,6 +61,14 @@ type mcpBrokerImpl struct {
 	mcpServers map[config.UpstreamMCPID]*upstream.MCPManager
 	// protects mcpServers
 	mcpLock sync.RWMutex
+
+	// a2aAgents tracks registered A2A agent managers
+	a2aAgents map[string]*upstream.A2AManager
+	// protects a2aAgents
+	a2aLock sync.RWMutex
+
+	// gatewayExternalHostname is used to rewrite A2A agent card URLs
+	gatewayExternalHostname string
 
 	// listeningMCPServer returns an actual listening MCP server that federates registered MCP servers
 	listeningMCPServer *server.MCPServer
@@ -111,10 +122,18 @@ func WithInvalidToolPolicy(policy mcpv1alpha1.InvalidToolPolicy) Option {
 	}
 }
 
+// WithGatewayExternalHostname sets the external hostname used to rewrite A2A agent card URLs
+func WithGatewayExternalHostname(hostname string) Option {
+	return func(mb *mcpBrokerImpl) {
+		mb.gatewayExternalHostname = hostname
+	}
+}
+
 // NewBroker creates a new MCPBroker accepts optional config functions such as WithEnforceToolFilter
 func NewBroker(logger *slog.Logger, opts ...Option) MCPBroker {
 	mcpBkr := &mcpBrokerImpl{
 		mcpServers:            map[config.UpstreamMCPID]*upstream.MCPManager{},
+		a2aAgents:             map[string]*upstream.A2AManager{},
 		logger:                logger,
 		virtualServers:        map[string]*config.VirtualServer{},
 		managerTickerInterval: time.Second * 60,
@@ -207,6 +226,26 @@ func (m *mcpBrokerImpl) OnConfigChange(ctx context.Context, conf *config.MCPServ
 		m.virtualServers[vs.Name] = vs
 	}
 	m.vsLock.Unlock()
+
+	// sync A2A agents
+	m.a2aLock.Lock()
+	for _, agent := range conf.A2AAgents {
+		if !agent.Enabled {
+			delete(m.a2aAgents, agent.Name)
+			continue
+		}
+		if _, ok := m.a2aAgents[agent.Name]; !ok {
+			mgr := upstream.NewA2AManager(agent)
+			m.a2aAgents[agent.Name] = mgr
+			go func(mgr *upstream.A2AManager) {
+				if err := mgr.Refresh(ctx); err != nil {
+					m.logger.Error("failed to fetch A2A agent card", "agent", mgr.Name(), "error", err)
+				}
+			}(mgr)
+		}
+	}
+	m.a2aLock.Unlock()
+
 	m.logger.Debug("Broker OnConfigChange done", "Total managers for upstream mcp servers", len(m.mcpServers), "total servers", len(conf.Servers))
 }
 
@@ -287,6 +326,11 @@ func (m *mcpBrokerImpl) MCPServer() *server.MCPServer {
 func (m *mcpBrokerImpl) HandleStatusRequest(w http.ResponseWriter, r *http.Request) {
 	handler := NewStatusHandler(m, *m.logger)
 	handler.ServeHTTP(w, r)
+}
+
+// HandleA2AAgents handles the federated A2A agent card endpoint
+func (m *mcpBrokerImpl) HandleA2AAgents(w http.ResponseWriter, r *http.Request) {
+	m.handleFederatedAgentCard(w, r)
 }
 
 // ValidateAllServers performs comprehensive validation of all registered servers and returns status

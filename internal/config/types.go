@@ -17,6 +17,7 @@ type MCPServersConfig struct {
 
 	Servers        []*MCPServer
 	VirtualServers []*VirtualServer
+	A2AAgents      []A2AAgent
 	observers      []Observer
 	//MCPGatewayExternalHostname is the accessible host of the gateway listener
 	MCPGatewayExternalHostname string
@@ -100,10 +101,18 @@ type Observer interface {
 	OnConfigChange(ctx context.Context, config *MCPServersConfig)
 }
 
+// A2AAgent represents an upstream A2A agent registration
+type A2AAgent struct {
+	Name    string `json:"name"    yaml:"name"`
+	CardURL string `json:"cardURL" yaml:"cardURL"`
+	Enabled bool   `json:"enabled" yaml:"enabled"`
+}
+
 // BrokerConfig holds broker configuration
 type BrokerConfig struct {
-	Servers        []MCPServer           `json:"servers" yaml:"servers"`
+	Servers        []MCPServer           `json:"servers"              yaml:"servers"`
 	VirtualServers []VirtualServerConfig `json:"virtualServers,omitempty" yaml:"virtualServers,omitempty"`
+	A2AAgents      []A2AAgent            `json:"a2aAgents,omitempty"  yaml:"a2aAgents,omitempty"`
 }
 
 // AuthConfig holds auth configuration
