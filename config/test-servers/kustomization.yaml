@@ -39,3 +39,6 @@ resources:
   - broken-server-service.yaml
   - broken-server-httproute.yaml
   - broken-server-deployment.yaml
+  - a2a-agent-deployment.yaml
+  - a2a-agent-service.yaml
+  - a2a-agent-httproute.yaml

@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a2a-agent
+  labels:
+    app: a2a-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: a2a-agent
+  template:
+    metadata:
+      labels:
+        app: a2a-agent
+    spec:
+      containers:
+      - name: a2a-agent
+        image: ghcr.io/kuadrant/mcp-gateway/a2a-agent:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8090
+          name: http
+        env:
+        - name: PORT
+          value: "8090"
+        resources:
+          limits:
+            memory: "64Mi"
+            cpu: "100m"
+          requests:
+            memory: "32Mi"
+            cpu: "50m"
